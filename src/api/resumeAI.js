@@ -1,13 +1,12 @@
-const AI_API_URL = "/api";
+const AI_API_URL =
+  "http://localhost:5000/api";
 
 export const analyzeResume = async (
   file,
   signal
 ) => {
   if (!file) {
-    throw new Error(
-      "Please select a resume."
-    );
+    throw new Error("Please select a resume.");
   }
 
   const formData = new FormData();
@@ -15,11 +14,6 @@ export const analyzeResume = async (
   formData.append(
     "resume",
     file
-  );
-
-  console.log(
-    "Sending resume to CareerPilot AI:",
-    file.name
   );
 
   const response = await fetch(
@@ -44,14 +38,7 @@ export const analyzeResume = async (
   if (!response.ok) {
     throw new Error(
       data?.message ||
-        "Resume analysis failed."
-    );
-  }
-
-  if (!data?.success) {
-    throw new Error(
-      data?.message ||
-        "Resume analysis failed."
+      "Resume analysis failed."
     );
   }
 

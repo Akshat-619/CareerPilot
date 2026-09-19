@@ -1,7 +1,13 @@
 import express from "express";
 import multer from "multer";
 
-import { extractResumeText } from "../services/resumeParser.js";
+import {
+  extractResumeText,
+} from "../services/resumeParser.js";
+
+import {
+  analyzeResumeWithAI,
+} from "../services/openrouter.js";
 
 const router = express.Router();
 
@@ -44,7 +50,7 @@ const upload = multer({
 
 
 // ============================================================
-// RESUME ANALYSIS
+// ANALYZE
 // ============================================================
 
 router.post(
@@ -52,32 +58,23 @@ router.post(
   upload.single("resume"),
 
   async (req, res) => {
+
     try {
-      // --------------------------------------------------------
-      // FILE CHECK
-      // --------------------------------------------------------
 
       if (!req.file) {
         return res.status(400).json({
           success: false,
-          message: "Please upload a resume.",
+          message:
+            "Please upload a resume.",
         });
       }
 
-
-      console.log(
-        "=========================================="
-      );
 
       console.log(
         "Resume received:",
         req.file.originalname
       );
 
-
-      // --------------------------------------------------------
-      // EXTRACT TEXT
-      // --------------------------------------------------------
 
       const resumeText =
         await extractResumeText(
@@ -104,66 +101,22 @@ router.post(
       );
 
 
-      // --------------------------------------------------------
-      // TEMPORARY CAREERPILOT PROFILE
-      //
-      // This keeps the complete upload pipeline working while
-      // we avoid the OpenRouter request that is currently
-      // returning the content-parts error.
-      // --------------------------------------------------------
+      // ======================================================
+      // AI ANALYSIS
+      // ======================================================
 
-      const profile = {
-        personal: {
-          name: "",
-          email: "",
-          phone: "",
-          location: "",
-        },
-
-        summary: "",
-
-        education: [],
-
-        experience: [],
-
-        skills: {
-          programming: [],
-          frontend: [],
-          backend: [],
-          databases: [],
-          tools: [],
-          other: [],
-        },
-
-        projects: [],
-
-        certifications: [],
-
-        achievements: [],
-
-        careerProfile: {
-          likelyRoles: [],
-          experienceLevel: "",
-          primaryDomain: "",
-          careerInterests: [],
-        },
-      };
+      const aiResult =
+        await analyzeResumeWithAI(
+          resumeText
+        );
 
 
-      // --------------------------------------------------------
+      // ======================================================
       // RESPONSE
-      // --------------------------------------------------------
-
-      console.log(
-        "Resume processing completed."
-      );
-
-      console.log(
-        "=========================================="
-      );
-
+      // ======================================================
 
       return res.json({
+
         success: true,
 
         file: {
@@ -180,37 +133,33 @@ router.post(
         extractedTextLength:
           resumeText.length,
 
-        profile,
+        profile:
+          aiResult.profile,
 
         model:
-          "CareerPilot Resume Engine",
+          aiResult.model,
 
-        usage: null,
+        usage:
+          aiResult.usage,
+
       });
 
     } catch (error) {
 
       console.error(
-        "=========================================="
-      );
-
-      console.error(
-        "Resume processing failed:"
+        "Resume analysis failed:"
       );
 
       console.error(error);
 
-      console.error(
-        "=========================================="
-      );
-
-
       return res.status(500).json({
+
         success: false,
 
         message:
           error.message ||
-          "Resume processing failed.",
+          "Resume analysis failed.",
+
       });
     }
   }
