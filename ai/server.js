@@ -8,16 +8,32 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
 
-// ============================================================
-// CORS — MANUAL
-// ============================================================
+  try {
+    const url = new URL(origin);
+
+    return (
+      url.protocol === "http:" &&
+      url.hostname === "localhost"
+    );
+  } catch {
+    return false;
+  }
+};
 
 app.use((req, res, next) => {
-  res.header(
-    "Access-Control-Allow-Origin",
-    "http://localhost:5175"
-  );
+  const origin = req.headers.origin;
+
+  if (isAllowedOrigin(origin)) {
+    res.header(
+      "Access-Control-Allow-Origin",
+      origin || "*"
+    );
+  }
 
   res.header(
     "Access-Control-Allow-Methods",
@@ -29,6 +45,11 @@ app.use((req, res, next) => {
     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
 
+  res.header(
+    "Access-Control-Max-Age",
+    "86400"
+  );
+
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
@@ -36,21 +57,11 @@ app.use((req, res, next) => {
   next();
 });
 
-
-// ============================================================
-// BODY
-// ============================================================
-
 app.use(
   express.json({
     limit: "2mb",
   })
 );
-
-
-// ============================================================
-// HEALTH
-// ============================================================
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -60,38 +71,36 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-
-// ============================================================
-// DEBUG
-// ============================================================
-
 app.get("/api/debug", (req, res) => {
   res.json({
     success: true,
     server: "CareerPilot AI",
-    version: "DIRECT-CORS-TEST",
+    version: "DYNAMIC-LOCALHOST-CORS",
     port: PORT,
+    allowedOrigin: req.headers.origin || null,
   });
 });
 
+app.use(
+  "/api/resume",
+  resumeRoutes
+);
 
-// ============================================================
-// ROUTES
-// ============================================================
-
-app.use("/api/resume", resumeRoutes);
-
-app.use("/api/jobs", jobRoutes);
-
-
-// ============================================================
-// ERROR
-// ============================================================
+app.use(
+  "/api/jobs",
+  jobRoutes
+);
 
 app.use((error, req, res, next) => {
-  console.error("CareerPilot AI Error:", error);
+  console.error(
+    "CareerPilot AI Error:"
+  );
 
-  res.status(error.status || 500).json({
+  console.error(error);
+
+  res.status(
+    error.status || 500
+  ).json({
     success: false,
     message:
       error.message ||
@@ -99,13 +108,36 @@ app.use((error, req, res, next) => {
   });
 });
 
-
-// ============================================================
-// START
-// ============================================================
-
 app.listen(PORT, () => {
   console.log(
-    `CareerPilot AI running on http://localhost:${PORT}`
+    "=========================================="
+  );
+
+  console.log(
+    "CareerPilot AI Server"
+  );
+
+  console.log(
+    "=========================================="
+  );
+
+  console.log(
+    `Running on http://localhost:${PORT}`
+  );
+
+  console.log(
+    "CORS: localhost origins allowed"
+  );
+
+  console.log(
+    "Resume API: /api/resume/analyze"
+  );
+
+  console.log(
+    "Jobs API: /api/jobs"
+  );
+
+  console.log(
+    "=========================================="
   );
 });
